@@ -27,7 +27,7 @@ class Character(pygame.sprite.Sprite):
         self.alive = True
         self.animation_list = []
         self.animation_index = 0 
-        self.animation_action = 0 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
+        self.animation_action = 3 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
         self.current_time = pygame.time.get_ticks()
         
         # Idle animation
