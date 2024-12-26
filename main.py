@@ -14,7 +14,7 @@ pygame.display.set_caption("Tale of Samurai")
 clock = pygame.time.Clock()
 
 running = True
-fps = 30
+fps = 60
 
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, name, max_hp, strength, potions):
