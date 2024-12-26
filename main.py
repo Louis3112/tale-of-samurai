@@ -26,8 +26,8 @@ class Character(pygame.sprite.Sprite):
         self.potions = potions
         self.alive = True
         self.animation_list = []
-        self.animation_index = 0
-        self.animation_action = 1
+        self.animation_index = 0 
+        self.animation_action = 0 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
         self.current_time = pygame.time.get_ticks()
         
         # Idle animation
@@ -52,12 +52,34 @@ class Character(pygame.sprite.Sprite):
             temp_animation_list.append(img)
         self.animation_list.append(temp_animation_list)
         
+        # Hurt animation
+        temp_animation_list = []
+        for i in range(1, 4):
+            img = pygame.image.load(f"assets/{self.name}/Hurt/{i}.png").convert_alpha()
+            if self.name != 'Samurai':
+                img = pygame.transform.flip(img, True, False)
+            img = pygame.transform.rotozoom(img, 0, img_scale_ratio)
+            temp_animation_list.append(img)
+        self.animation_list.append(temp_animation_list)
+        
+        # Death animation
+        temp_animation_list = []
+        for i in range(1, 6):
+            img = pygame.image.load(f"assets/{self.name}/Dead/{i}.png").convert_alpha()
+            if self.name != 'Samurai':
+                img = pygame.transform.flip(img, True, False)
+            img = pygame.transform.rotozoom(img, 0, img_scale_ratio)
+            temp_animation_list.append(img)
+        self.animation_list.append(temp_animation_list)
+        
         self.image = self.animation_list[self.animation_action][self.animation_index]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         
     def animation(self):
         animation_delay = 150
+        if self.animation_action == 3:
+            animation_delay = 200
         self.image = self.animation_list[int(self.animation_action)][int(self.animation_index)]
         if pygame.time.get_ticks() - self.current_time >= animation_delay:
             self.current_time = pygame.time.get_ticks()
