@@ -13,8 +13,26 @@ screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_hei
 pygame.display.set_caption("Tale of Samurai")
 clock = pygame.time.Clock()
 
+# Fonts
+font_style = "Pixeltype"
+fonts = {
+    "default": pygame.font.Font(f"font/{font_style}.ttf", 24),
+    "sm": pygame.font.Font(f"font/{font_style}.ttf", 20),
+    "md": pygame.font.Font(f"font/{font_style}.ttf", 32),
+    "lg": pygame.font.Font(f"font/{font_style}.ttf", 40),
+}
+
+# Colors
+colors = {
+    "white" : '#FFFFFF',
+    "black" : '#000000',
+    "brown" : '#AB886D',
+    "green" : '#AFD198',
+    "red" : '#9B4444',
+}
+
 running = True
-fps = 30
+fps = 60
 
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, name, max_hp, strength, potions):
@@ -26,8 +44,8 @@ class Character(pygame.sprite.Sprite):
         self.potions = potions
         self.alive = True
         self.animation_list = []
-        self.animation_index = 0
-        self.animation_action = 1
+        self.animation_index = 0 
+        self.animation_action = 0 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
         self.current_time = pygame.time.get_ticks()
         
         # Idle animation
@@ -52,12 +70,34 @@ class Character(pygame.sprite.Sprite):
             temp_animation_list.append(img)
         self.animation_list.append(temp_animation_list)
         
+        # Hurt animation
+        temp_animation_list = []
+        for i in range(1, 4):
+            img = pygame.image.load(f"assets/{self.name}/Hurt/{i}.png").convert_alpha()
+            if self.name != 'Samurai':
+                img = pygame.transform.flip(img, True, False)
+            img = pygame.transform.rotozoom(img, 0, img_scale_ratio)
+            temp_animation_list.append(img)
+        self.animation_list.append(temp_animation_list)
+        
+        # Death animation
+        temp_animation_list = []
+        for i in range(1, 6):
+            img = pygame.image.load(f"assets/{self.name}/Dead/{i}.png").convert_alpha()
+            if self.name != 'Samurai':
+                img = pygame.transform.flip(img, True, False)
+            img = pygame.transform.rotozoom(img, 0, img_scale_ratio)
+            temp_animation_list.append(img)
+        self.animation_list.append(temp_animation_list)
+        
         self.image = self.animation_list[self.animation_action][self.animation_index]
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         
     def animation(self):
         animation_delay = 150
+        if self.animation_action == 3:
+            animation_delay = 200
         self.image = self.animation_list[int(self.animation_action)][int(self.animation_index)]
         if pygame.time.get_ticks() - self.current_time >= animation_delay:
             self.current_time = pygame.time.get_ticks()
@@ -71,14 +111,38 @@ class Character(pygame.sprite.Sprite):
     def update(self):
         self.animation()
 
+class HealthBar():
+    def __init__(self, x, y, hp, max_hp):
+        self.x = x
+        self.y = y
+        self.hp = hp
+        self.max_hp = max_hp
+        self.width = 250
+        self.height = 25
+        self.border_radius = 10
+        self.health_bar_value = (self.hp / self.max_hp) * self.width
+        
+    def draw(self, hp):
+        self.hp = hp
+        bar_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        pygame.draw.rect(bar_surf, colors['red'], (0, 0, self.width, self.height), border_radius=self.border_radius)
+        
+        pygame.draw.rect(bar_surf, colors['green'], (0, 0, self.health_bar_value, self.height), border_radius=self.border_radius)
+        pygame.draw.rect(bar_surf, colors['brown'], (0, 0, self.width, self.height), width=5, border_radius=self.border_radius)
+        screen.blit(bar_surf, (self.x, self.y)) # 475
+
 background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
 panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
 
 # Samurai
 samurai = Character(100, 270, 'Samurai', 100, 45, 3)
+samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
 
+# Enemies - Gotoku and Yorei
 gotoku = Character(screen_width - 100, 270, 'Gotoku', 150, 25, 2)
+gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
 yorei = Character(screen_width - 200, 180, 'Yorei', 80, 40, 1)
+yorei_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) + 30, yorei.hp, yorei.max_hp)
 enemies = []
 enemies.append(gotoku)
 enemies.append(yorei)
@@ -86,8 +150,22 @@ enemies.append(yorei)
 def draw_bg():
     screen.blit(background_surf, (0, 0))
 
+def draw_text(text, x, y, font, color):
+    text_surf = font.render(text, False, color)
+    text_rect = text_surf.get_rect(center = (x, y))
+    screen.blit(text_surf, text_rect)
+
 def draw_panel():
     screen.blit(panel_surf, (0, screen_height))
+    
+    # Samurai stats
+    draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+    draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+    
+    # Enemies stats
+    for count, enemy in enumerate(enemies):
+        draw_text(f"{enemy.name}" , screen_width - 280, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
+        draw_text(f"HP: {enemy.hp}/{enemy.max_hp}" , screen_width - 110, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
 
 while running:
     for event in pygame.event.get():
@@ -101,6 +179,11 @@ while running:
     
     # Draw panel
     draw_panel()
+    
+    # Draw characters healt bar
+    samurai_health_bar.draw(samurai.hp)
+    gotoku_health_bar.draw(gotoku.hp)
+    yorei_health_bar.draw(yorei.hp)
     
     # Draw samurai
     samurai.draw()
