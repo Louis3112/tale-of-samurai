@@ -11,16 +11,18 @@ screen_height = 400
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 pygame.display.set_caption("Tale of Samurai")
 clock = pygame.time.Clock()
-font_sm = pygame.font.Font("font/Pixeltype.ttf", 24)
 
 running = True
 fps = 30
 
 background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
-test_font_surf = font_sm.render("Hello World!", True, (255, 255, 255))
+panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
 
 def draw_bg():
     screen.blit(background_surf, (0, 0))
+
+def draw_panel():
+    screen.blit(panel_surf, (0, screen_height))
 
 while running:
     for event in pygame.event.get():
@@ -30,7 +32,7 @@ while running:
             exit()
      
     draw_bg()
-    screen.blit(test_font_surf, (100, 100))
+    draw_panel()
     
     pygame.display.update()
     clock.tick(fps)
