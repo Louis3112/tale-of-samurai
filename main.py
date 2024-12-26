@@ -15,8 +15,11 @@ font_sm = pygame.font.Font("font/Pixeltype.ttf", 24)
 running = True
 fps = 30
 
-background_surf = pygame.transform.scale(pygame.image.load("graphics/background.png"), (screen_width, screen_height))
+background_surf = pygame.transform.scale(pygame.image.load("graphics/background.png").convert_alpha(), (screen_width, screen_height))
 test_font_surf = font_sm.render("Hello World!", True, (255, 255, 255))
+
+def draw_bg():
+    screen.blit(background_surf, (0, 0))
 
 while running:
     for event in pygame.event.get():
@@ -25,7 +28,7 @@ while running:
             pygame.quit()
             exit()
      
-    screen.blit(background_surf, (0, 0))
+    draw_bg()
     screen.blit(test_font_surf, (100, 100))
     
     pygame.display.update()
