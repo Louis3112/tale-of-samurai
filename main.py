@@ -38,9 +38,13 @@ background_surf = pygame.transform.scale(pygame.image.load("assets/background.pn
 panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
 
 # Samurai
-samurai = Character(100, 270, 'Samurai', 100, 40, 3)
-# Gotoku
-gotoku = Character(screen_width - 100, 270, 'Gotoku', 100, 40, 3)
+samurai = Character(100, 270, 'Samurai', 100, 45, 3)
+
+gotoku = Character(screen_width - 100, 270, 'Gotoku', 150, 25, 2)
+yorei = Character(screen_width - 200, 180, 'Yorei', 80, 40, 1)
+enemies = []
+enemies.append(gotoku)
+enemies.append(yorei)
 
 def draw_bg():
     screen.blit(background_surf, (0, 0))
@@ -64,8 +68,9 @@ while running:
     # Draw samurai
     samurai.draw()
     
-    # Draw Gotoku
-    gotoku.draw()
+    # Draw enemies
+    for enemy in enemies:
+        enemy.draw()
     
     pygame.display.update()
     clock.tick(fps)
