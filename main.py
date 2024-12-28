@@ -252,11 +252,15 @@ while running:
     
     # Cursor as sword
     mouse_pos = pygame.mouse.get_pos()
-    if current_character == 1:
-        pygame.mouse.set_visible(False)
-        screen.blit(sword_surf, mouse_pos)
-    else:
-        pygame.mouse.set_visible(True)
+    for enemy in enemies:
+        if current_character == 1:
+            if enemy.alive and enemy.rect.collidepoint(mouse_pos):
+                pygame.mouse.set_visible(False)
+                screen.blit(sword_surf, mouse_pos)
+            else:
+                pygame.mouse.set_visible(True)
+        else:
+            pygame.mouse.set_visible(True)
     
     if current_character > total_characters:
         current_character = 1
