@@ -41,6 +41,10 @@ colors = {
 running = True
 fps = 60
 
+background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
+panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
+sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
+
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, name, max_hp, strength, potions):
         self.name = name
@@ -164,9 +168,6 @@ class HealthBar():
         pygame.draw.rect(bar_surf, colors['brown'], (0, 0, self.width, self.height), width=5, border_radius=self.border_radius)
         screen.blit(bar_surf, (self.x, self.y)) # 475
 
-background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
-panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
-
 # Samurai
 samurai = Character(100, 270, 'Samurai', 100, 60, 3)
 samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
@@ -222,6 +223,16 @@ while running:
     samurai.draw()
     samurai.update()
     
+    # Draw enemies
+    for enemy in enemies:
+        enemy.draw()
+        enemy.update()
+    
+    # Cursor as sword
+    mouse_pos = pygame.mouse.get_pos()
+    pygame.mouse.set_visible(False)
+    screen.blit(sword_surf, mouse_pos)
+    
     if current_character > total_characters:
         current_character = 1
     
@@ -245,11 +256,6 @@ while running:
                     action_cooldown = 0
         else:
             current_character += 1
-    
-    # Draw enemies
-    for enemy in enemies:
-        enemy.draw()
-        enemy.update()
     
     pygame.display.update()
     clock.tick(fps)
