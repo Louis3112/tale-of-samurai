@@ -59,6 +59,7 @@ class Character(pygame.sprite.Sprite):
         self.animation_index = 0 
         self.animation_action = 0 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
         self.current_time = pygame.time.get_ticks()
+        self.alpha = 255
         
         # Idle animation
         temp_animation_list = []
@@ -118,7 +119,23 @@ class Character(pygame.sprite.Sprite):
                 self.idle()
     
     def draw(self):
-        screen.blit(self.image, self.rect)
+        if not self.alive:
+            self.animation_action = 3
+            self.animation_index = len(self.animation_list[3]) - 1
+            
+            if self.name != 'Samurai':
+                if not hasattr(self, 'alpha'):
+                    self.alpha = 255
+                if self.alpha > 0:
+                    self.alpha -= 10
+                    self.image.set_alpha(self.alpha)
+                else:
+                    self.image.set_alpha(0)
+            else:
+                self.image = self.animation_list[3][self.animation_index]
+            screen.blit(self.image, self.rect)
+        else:
+            screen.blit(self.image, self.rect)
     
     def idle(self):
         self.animation_action = 0
@@ -235,14 +252,19 @@ while running:
     
     # Cursor as sword
     mouse_pos = pygame.mouse.get_pos()
-    if current_character == 1:
-        pygame.mouse.set_visible(False)
-        screen.blit(sword_surf, mouse_pos)
-    else:
-        pygame.mouse.set_visible(True)
+    for enemy in enemies:
+        if current_character == 1:
+            if enemy.alive and enemy.rect.collidepoint(mouse_pos):
+                pygame.mouse.set_visible(False)
+                screen.blit(sword_surf, mouse_pos)
+            else:
+                pygame.mouse.set_visible(True)
+        else:
+            pygame.mouse.set_visible(True)
     
     if current_character > total_characters:
         current_character = 1
+        total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
     
     # Character state
     attack = False
@@ -268,15 +290,15 @@ while running:
     # Enemies action
     action_delay = 100
     for count, enemy in enumerate(enemies):
-        if enemy.alive:
-            if current_character == 2 + count:
+        if current_character == 2 + count:
+            if enemy.alive:
                 action_cooldown += 1
                 if action_cooldown >= action_delay:
                     enemy.attack(samurai)
                     current_character += 1
                     action_cooldown = 0
-        else:
-            current_character += 1
+            else:
+                current_character += 1
     
     pygame.display.update()
     clock.tick(fps)
