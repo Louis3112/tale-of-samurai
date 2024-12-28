@@ -243,6 +243,7 @@ while running:
     
     if current_character > total_characters:
         current_character = 1
+        total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
     
     # Character state
     attack = False
@@ -268,15 +269,15 @@ while running:
     # Enemies action
     action_delay = 100
     for count, enemy in enumerate(enemies):
-        if enemy.alive:
-            if current_character == 2 + count:
+        if current_character == 2 + count:
+            if enemy.alive:
                 action_cooldown += 1
                 if action_cooldown >= action_delay:
                     enemy.attack(samurai)
                     current_character += 1
                     action_cooldown = 0
-        else:
-            current_character += 1
+            else:
+                current_character += 1
     
     pygame.display.update()
     clock.tick(fps)
