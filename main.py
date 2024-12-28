@@ -14,7 +14,7 @@ img_scale_ratio = 1.5
 current_character = 1
 total_characters = 3
 action_cooldown = 0
-action_delay = 100
+action_delay = 150
 
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 pygame.display.set_caption("Tale of Samurai")
