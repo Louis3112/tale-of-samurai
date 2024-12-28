@@ -1,5 +1,6 @@
 import pygame
 from sys import exit
+from random import randint
 
 pygame.init()
 
@@ -7,7 +8,13 @@ pygame.init()
 bottom_panel_height = 150
 screen_width = 800
 screen_height = 400
+
+# Game variables
 img_scale_ratio = 1.5
+current_character = 1
+total_characters = 3
+action_cooldown = 0
+action_delay = 100
 
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 pygame.display.set_caption("Tale of Samurai")
@@ -95,7 +102,7 @@ class Character(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         
     def animation(self):
-        animation_delay = 150
+        animation_delay = 100
         if self.animation_action == 3:
             animation_delay = 200
         self.image = self.animation_list[int(self.animation_action)][int(self.animation_index)]
@@ -103,10 +110,35 @@ class Character(pygame.sprite.Sprite):
             self.current_time = pygame.time.get_ticks()
             self.animation_index += 1
             if self.animation_index >= len(self.animation_list[self.animation_action]):
-                self.animation_index = 0
+                self.idle()
     
     def draw(self):
         screen.blit(self.image, self.rect)
+    
+    def idle(self):
+        self.animation_action = 0
+        self.animation_index = 0
+        self.current_time = pygame.time.get_ticks()
+    
+    def die(self):
+        self.alive = False
+        self.animation_action = 3
+        self.animation_index = 0
+        self.current_time = pygame.time.get_ticks()
+    
+    def attack(self, target):
+        rand_dmg = randint(-5, 5)
+        damage = self.strength + rand_dmg
+        target.hp -= damage
+        target.animation_action = 2
+        target.animation_index = 0
+        target.current_time = pygame.time.get_ticks()
+        self.animation_action = 1
+        self.animation_index = 0
+        self.current_time = pygame.time.get_ticks()
+        if target.hp <= 0:
+            target.hp = 0
+            target.die()
         
     def update(self):
         self.animation()
@@ -124,6 +156,7 @@ class HealthBar():
         
     def draw(self, hp):
         self.hp = hp
+        self.health_bar_value = (self.hp / self.max_hp) * self.width
         bar_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         pygame.draw.rect(bar_surf, colors['red'], (0, 0, self.width, self.height), border_radius=self.border_radius)
         
@@ -135,13 +168,13 @@ background_surf = pygame.transform.scale(pygame.image.load("assets/background.pn
 panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
 
 # Samurai
-samurai = Character(100, 270, 'Samurai', 100, 45, 3)
+samurai = Character(100, 270, 'Samurai', 100, 60, 3)
 samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
 
 # Enemies - Gotoku and Yorei
-gotoku = Character(screen_width - 100, 270, 'Gotoku', 150, 25, 2)
+gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, 2)
 gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
-yorei = Character(screen_width - 200, 180, 'Yorei', 80, 40, 1)
+yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, 1)
 yorei_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) + 30, yorei.hp, yorei.max_hp)
 enemies = []
 enemies.append(gotoku)
@@ -188,6 +221,30 @@ while running:
     # Draw samurai
     samurai.draw()
     samurai.update()
+    
+    if current_character > total_characters:
+        current_character = 1
+    
+    # Samurai action
+    if samurai.alive:
+        if current_character == 1:
+            action_cooldown += 1
+            if action_cooldown >= action_delay:
+                samurai.attack(gotoku)
+                current_character += 1
+                action_cooldown = 0
+    
+    # Enemies action
+    for count, enemy in enumerate(enemies):
+        if enemy.alive:
+            if current_character == 2 + count:
+                action_cooldown += 1
+                if action_cooldown >= action_delay:
+                    enemy.attack(samurai)
+                    current_character += 1
+                    action_cooldown = 0
+        else:
+            current_character += 1
     
     # Draw enemies
     for enemy in enemies:
