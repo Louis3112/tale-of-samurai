@@ -1,6 +1,7 @@
 import pygame
 from sys import exit
 from random import randint
+import button
 
 pygame.init()
 
@@ -319,6 +320,14 @@ def main_menu():
     
     background_surf = pygame.transform.scale(pygame.image.load("assets/mountain_bg.png").convert_alpha(), (screen_width, screen_height + bottom_panel_height))
     
+    # buttons
+    play_btn_img = pygame.image.load("assets/Buttons/btn_play.png").convert_alpha()
+    exit_btn_img = pygame.image.load("assets/Buttons/btn_exit.png").convert_alpha()
+    
+    # button classes
+    play_btn = button.Button(screen_width / 2, 200, play_btn_img, 1.2)
+    exit_btn = button.Button(100, 300, exit_btn_img, 1.2)
+    
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -326,7 +335,16 @@ def main_menu():
                 pygame.quit()
                 exit()
         
+        # draw background
         draw_bg(background_surf)
+
+        # draw buttons
+        if play_btn.draw(screen):
+            play()
+        if exit_btn.draw(screen):
+            running = False
+            pygame.quit()
+            exit()
         
         pygame.display.update()
         clock.tick(fps)
