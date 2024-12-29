@@ -5,18 +5,15 @@ import button
 
 pygame.init()
 
-# Game window screen
 bottom_panel_height = 150
 screen_width = 800
 screen_height = 400
 
-# Game variables
 img_scale_ratio = 1.5
 
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 clock = pygame.time.Clock()
 
-# Fonts
 font_style = "Pixeltype"
 fonts = {
     "default": pygame.font.Font(f"font/{font_style}.ttf", 24),
@@ -25,7 +22,6 @@ fonts = {
     "lg": pygame.font.Font(f"font/{font_style}.ttf", 40),
 }
 
-# Colors
 colors = {
     "white" : '#FFFFFF',
     "black" : '#000000',
@@ -196,16 +192,15 @@ def play():
     action_cooldown = 0
     action_delay = 100
     clicked = False
+    game_active = True
     
     background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
     panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
     sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
     
-    # Samurai
     samurai = Character(100, 270, 'Samurai', 100, 60, 3)
     samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
 
-    # Enemies - Gotoku and Yorei
     gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, 2)
     gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
     yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, 1)
@@ -217,11 +212,9 @@ def play():
     def draw_panel():
         screen.blit(panel_surf, (0, screen_height))
         
-        # Samurai stats
         draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
         draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
         
-        # Enemies stats
         for count, enemy in enumerate(enemies):
             draw_text(f"{enemy.name}" , screen_width - 280, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
             draw_text(f"HP: {enemy.hp}/{enemy.max_hp}" , screen_width - 110, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
@@ -232,84 +225,118 @@ def play():
                 running = False
                 pygame.quit()
                 exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if game_active and event.type == pygame.MOUSEBUTTONDOWN:
                 clicked = True
             else:
                 clicked = False
         
-        # Draw background
-        draw_bg(background_surf)
-        
-        # Draw panel
-        draw_panel()
-        
-        # Draw characters healt bar
-        samurai_health_bar.draw(samurai.hp)
-        gotoku_health_bar.draw(gotoku.hp)
-        yorei_health_bar.draw(yorei.hp)
-        
-        # Draw samurai
-        samurai.draw()
-        samurai.update()
-        
-        # Draw enemies
-        for enemy in enemies:
-            enemy.draw()
-            enemy.update()
-        
-        # Cursor as sword
-        mouse_pos = pygame.mouse.get_pos()
-        for enemy in enemies:
-            if current_character == 1:
-                if enemy.alive and enemy.rect.collidepoint(mouse_pos):
-                    pygame.mouse.set_visible(False)
-                    screen.blit(sword_surf, mouse_pos)
+        if game_active:
+            draw_bg(background_surf)
+            
+            draw_panel()
+            
+            samurai_health_bar.draw(samurai.hp)
+            gotoku_health_bar.draw(gotoku.hp)
+            yorei_health_bar.draw(yorei.hp)
+            
+            samurai.draw()
+            samurai.update()
+            
+            for enemy in enemies:
+                enemy.draw()
+                enemy.update()
+            
+            mouse_pos = pygame.mouse.get_pos()
+            for enemy in enemies:
+                if current_character == 1:
+                    if enemy.alive and enemy.rect.collidepoint(mouse_pos):
+                        pygame.mouse.set_visible(False)
+                        screen.blit(sword_surf, mouse_pos)
+                    else:
+                        pygame.mouse.set_visible(True)
                 else:
                     pygame.mouse.set_visible(True)
-            else:
-                pygame.mouse.set_visible(True)
-        
-        if current_character > total_characters:
-            current_character = 1
-            total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
-        
-        # Character state
-        attack = False
-        charm = False
-        target = None
-        for count, enemy in enumerate(enemies):
-            if enemy.rect.collidepoint(mouse_pos):
-                if clicked:
-                    attack = True
-                    target = enemies[count]
-        
-        # # Samurai action
-        if samurai.alive:
-            if current_character == 1:
-                action_delay = 50
-                action_cooldown += 1
-                if action_cooldown >= action_delay:
-                    if attack and target != None:
-                        samurai.attack(target)
-                        current_character += 1
-                        action_cooldown = 0
-        
-        # Enemies action
-        action_delay = 100
-        for count, enemy in enumerate(enemies):
-            if current_character == 2 + count:
-                if enemy.alive:
+            
+            if current_character > total_characters:
+                current_character = 1
+                total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
+            
+            attack = False
+            charm = False
+            target = None
+            for count, enemy in enumerate(enemies):
+                if enemy.rect.collidepoint(mouse_pos):
+                    if clicked:
+                        attack = True
+                        target = enemies[count]
+            
+            if samurai.alive:
+                if current_character == 1:
+                    action_delay = 50
                     action_cooldown += 1
                     if action_cooldown >= action_delay:
-                        enemy.attack(samurai)
+                        if attack and target != None:
+                            samurai.attack(target)
+                            current_character += 1
+                            action_cooldown = 0
+            
+            if not samurai.alive:
+                game_active = False
+            
+            count_enemies_alive = sum(1 for enemy in enemies if enemy.alive)
+            if count_enemies_alive == 0:
+                running = False
+                game_active = False
+            
+            action_delay = 100
+            for count, enemy in enumerate(enemies):
+                if current_character == 2 + count:
+                    if enemy.alive:
+                        action_cooldown += 1
+                        if action_cooldown >= action_delay:
+                            enemy.attack(samurai)
+                            current_character += 1
+                            action_cooldown = 0
+                    else:
                         current_character += 1
-                        action_cooldown = 0
-                else:
-                    current_character += 1
+        else:
+            restart()
         
         pygame.display.update()
         clock.tick(fps)
+
+def restart():
+    screen.fill((94, 129, 162))
+    
+    pygame.display.set_caption("Tale of Samurai: Restart Menu")
+    
+    running = True
+    fps = 60
+    
+    retry_btn_img = pygame.image.load("assets/Buttons/btn_retry.png").convert_alpha()
+    menu_btn_img = pygame.image.load("assets/Buttons/btn_menu.png").convert_alpha()
+    
+    retry_btn = button.Button(screen_width / 2, 200, retry_btn_img, 1.2)
+    menu_btn = button.Button(100, 300, menu_btn_img, 1.2)
+    
+    draw_text("GAME OVER", screen_width / 2, 100, fonts['lg'], colors['white'])
+    
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                exit()
+
+        # draw buttons
+        if retry_btn.draw(screen):
+            play()
+        if menu_btn.draw(screen):
+            main_menu()
         
+        pygame.display.update()
+        clock.tick(fps)
+ 
 def main_menu():
     screen.fill(colors['black'])
     
@@ -320,11 +347,9 @@ def main_menu():
     
     background_surf = pygame.transform.scale(pygame.image.load("assets/mountain_bg.png").convert_alpha(), (screen_width, screen_height + bottom_panel_height))
     
-    # buttons
     play_btn_img = pygame.image.load("assets/Buttons/btn_play.png").convert_alpha()
     exit_btn_img = pygame.image.load("assets/Buttons/btn_exit.png").convert_alpha()
     
-    # button classes
     play_btn = button.Button(screen_width / 2, 200, play_btn_img, 1.2)
     exit_btn = button.Button(100, 300, exit_btn_img, 1.2)
     
@@ -334,11 +359,9 @@ def main_menu():
                 running = False
                 pygame.quit()
                 exit()
-        
-        # draw background
+                
         draw_bg(background_surf)
 
-        # draw buttons
         if play_btn.draw(screen):
             play()
         if exit_btn.draw(screen):
