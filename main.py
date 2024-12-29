@@ -1,6 +1,7 @@
 import pygame
 from sys import exit
 from random import randint
+import button
 
 pygame.init()
 
@@ -11,14 +12,8 @@ screen_height = 400
 
 # Game variables
 img_scale_ratio = 1.5
-current_character = 1
-total_characters = 3
-action_cooldown = 0
-action_delay = 100
-clicked = False
 
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
-pygame.display.set_caption("Tale of Samurai")
 clock = pygame.time.Clock()
 
 # Fonts
@@ -38,13 +33,6 @@ colors = {
     "green" : '#AFD198',
     "red" : '#9B4444',
 }
-
-running = True
-fps = 60
-
-background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
-panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
-sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
 
 class Character(pygame.sprite.Sprite):
     def __init__(self, x, y, name, max_hp, strength, potions):
@@ -186,119 +174,179 @@ class HealthBar():
         pygame.draw.rect(bar_surf, colors['brown'], (0, 0, self.width, self.height), width=5, border_radius=self.border_radius)
         screen.blit(bar_surf, (self.x, self.y)) # 475
 
-# Samurai
-samurai = Character(100, 270, 'Samurai', 100, 60, 3)
-samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
-
-# Enemies - Gotoku and Yorei
-gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, 2)
-gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
-yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, 1)
-yorei_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) + 30, yorei.hp, yorei.max_hp)
-enemies = []
-enemies.append(gotoku)
-enemies.append(yorei)
-
-def draw_bg():
-    screen.blit(background_surf, (0, 0))
+def draw_bg(bg_surf):
+    screen.blit(bg_surf, (0, 0))
 
 def draw_text(text, x, y, font, color):
     text_surf = font.render(text, False, color)
     text_rect = text_surf.get_rect(center = (x, y))
     screen.blit(text_surf, text_rect)
 
-def draw_panel():
-    screen.blit(panel_surf, (0, screen_height))
+def play():
     
-    # Samurai stats
-    draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
-    draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+    screen.fill(colors['black'])
     
-    # Enemies stats
-    for count, enemy in enumerate(enemies):
-        draw_text(f"{enemy.name}" , screen_width - 280, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
-        draw_text(f"HP: {enemy.hp}/{enemy.max_hp}" , screen_width - 110, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
+    pygame.display.set_caption("Tale of Samurai: Battle")
+    
+    running = True
+    fps = 60
+    
+    current_character = 1
+    total_characters = 3
+    action_cooldown = 0
+    action_delay = 100
+    clicked = False
+    
+    background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
+    panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
+    sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
+    
+    # Samurai
+    samurai = Character(100, 270, 'Samurai', 100, 60, 3)
+    samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+    # Enemies - Gotoku and Yorei
+    gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, 2)
+    gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
+    yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, 1)
+    yorei_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) + 30, yorei.hp, yorei.max_hp)
+    enemies = []
+    enemies.append(gotoku)
+    enemies.append(yorei)
+
+    def draw_panel():
+        screen.blit(panel_surf, (0, screen_height))
+        
+        # Samurai stats
+        draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+        draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+        
+        # Enemies stats
+        for count, enemy in enumerate(enemies):
+            draw_text(f"{enemy.name}" , screen_width - 280, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
+            draw_text(f"HP: {enemy.hp}/{enemy.max_hp}" , screen_width - 110, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
+    
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                clicked = True
+            else:
+                clicked = False
+        
+        # Draw background
+        draw_bg(background_surf)
+        
+        # Draw panel
+        draw_panel()
+        
+        # Draw characters healt bar
+        samurai_health_bar.draw(samurai.hp)
+        gotoku_health_bar.draw(gotoku.hp)
+        yorei_health_bar.draw(yorei.hp)
+        
+        # Draw samurai
+        samurai.draw()
+        samurai.update()
+        
+        # Draw enemies
+        for enemy in enemies:
+            enemy.draw()
+            enemy.update()
+        
+        # Cursor as sword
+        mouse_pos = pygame.mouse.get_pos()
+        for enemy in enemies:
+            if current_character == 1:
+                if enemy.alive and enemy.rect.collidepoint(mouse_pos):
+                    pygame.mouse.set_visible(False)
+                    screen.blit(sword_surf, mouse_pos)
+                else:
+                    pygame.mouse.set_visible(True)
+            else:
+                pygame.mouse.set_visible(True)
+        
+        if current_character > total_characters:
+            current_character = 1
+            total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
+        
+        # Character state
+        attack = False
+        charm = False
+        target = None
+        for count, enemy in enumerate(enemies):
+            if enemy.rect.collidepoint(mouse_pos):
+                if clicked:
+                    attack = True
+                    target = enemies[count]
+        
+        # # Samurai action
+        if samurai.alive:
+            if current_character == 1:
+                action_delay = 50
+                action_cooldown += 1
+                if action_cooldown >= action_delay:
+                    if attack and target != None:
+                        samurai.attack(target)
+                        current_character += 1
+                        action_cooldown = 0
+        
+        # Enemies action
+        action_delay = 100
+        for count, enemy in enumerate(enemies):
+            if current_character == 2 + count:
+                if enemy.alive:
+                    action_cooldown += 1
+                    if action_cooldown >= action_delay:
+                        enemy.attack(samurai)
+                        current_character += 1
+                        action_cooldown = 0
+                else:
+                    current_character += 1
+        
+        pygame.display.update()
+        clock.tick(fps)
+        
+def main_menu():
+    screen.fill(colors['black'])
+    
+    pygame.display.set_caption("Tale of Samurai: Main Menu")
+    
+    running = True
+    fps = 60
+    
+    background_surf = pygame.transform.scale(pygame.image.load("assets/mountain_bg.png").convert_alpha(), (screen_width, screen_height + bottom_panel_height))
+    
+    # buttons
+    play_btn_img = pygame.image.load("assets/Buttons/btn_play.png").convert_alpha()
+    exit_btn_img = pygame.image.load("assets/Buttons/btn_exit.png").convert_alpha()
+    
+    # button classes
+    play_btn = button.Button(screen_width / 2, 200, play_btn_img, 1.2)
+    exit_btn = button.Button(100, 300, exit_btn_img, 1.2)
+    
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                exit()
+        
+        # draw background
+        draw_bg(background_surf)
+
+        # draw buttons
+        if play_btn.draw(screen):
+            play()
+        if exit_btn.draw(screen):
             running = False
             pygame.quit()
             exit()
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            clicked = True
-        else:
-            clicked = False
-     
-    # Draw background
-    draw_bg()
-    
-    # Draw panel
-    draw_panel()
-    
-    # Draw characters healt bar
-    samurai_health_bar.draw(samurai.hp)
-    gotoku_health_bar.draw(gotoku.hp)
-    yorei_health_bar.draw(yorei.hp)
-    
-    # Draw samurai
-    samurai.draw()
-    samurai.update()
-    
-    # Draw enemies
-    for enemy in enemies:
-        enemy.draw()
-        enemy.update()
-    
-    # Cursor as sword
-    mouse_pos = pygame.mouse.get_pos()
-    for enemy in enemies:
-        if current_character == 1:
-            if enemy.alive and enemy.rect.collidepoint(mouse_pos):
-                pygame.mouse.set_visible(False)
-                screen.blit(sword_surf, mouse_pos)
-            else:
-                pygame.mouse.set_visible(True)
-        else:
-            pygame.mouse.set_visible(True)
-    
-    if current_character > total_characters:
-        current_character = 1
-        total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
-    
-    # Character state
-    attack = False
-    charm = False
-    target = None
-    for count, enemy in enumerate(enemies):
-        if enemy.rect.collidepoint(mouse_pos):
-            if clicked:
-                attack = True
-                target = enemies[count]
-    
-    # # Samurai action
-    if samurai.alive:
-        if current_character == 1:
-            action_delay = 50
-            action_cooldown += 1
-            if action_cooldown >= action_delay:
-                if attack and target != None:
-                    samurai.attack(target)
-                    current_character += 1
-                    action_cooldown = 0
-    
-    # Enemies action
-    action_delay = 100
-    for count, enemy in enumerate(enemies):
-        if current_character == 2 + count:
-            if enemy.alive:
-                action_cooldown += 1
-                if action_cooldown >= action_delay:
-                    enemy.attack(samurai)
-                    current_character += 1
-                    action_cooldown = 0
-            else:
-                current_character += 1
-    
-    pygame.display.update()
-    clock.tick(fps)
+        
+        pygame.display.update()
+        clock.tick(fps)
+        
+main_menu()
