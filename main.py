@@ -44,6 +44,11 @@ class Character(pygame.sprite.Sprite):
         self.animation_action = 0 # 0: Idle, 1: Attack, 2: Hurt, 3: Die
         self.current_time = pygame.time.get_ticks()
         self.alpha = 255
+        self.is_attacking = False
+        self.attack_target = None
+        self.waiting_to_hurt = False
+        self.attack_start_time = 0
+        self.hurt_delay = 450
         
         # Idle animation
         temp_animation_list = []
@@ -95,11 +100,23 @@ class Character(pygame.sprite.Sprite):
         animation_delay = 100
         if self.animation_action == 3:
             animation_delay = 200
+        elif self.animation_action == 1:
+            animation_delay = 150
+            
         self.image = self.animation_list[int(self.animation_action)][int(self.animation_index)]
+        
         if pygame.time.get_ticks() - self.current_time >= animation_delay:
             self.current_time = pygame.time.get_ticks()
             self.animation_index += 1
+            if self.is_attacking and self.animation_index >= len(self.animation_list[1]):
+                self.is_attacking = False
+                self.attack_target = None
+                self.idle()
+                return
+                
             if self.animation_index >= len(self.animation_list[self.animation_action]):
+                if self.animation_action == 2:
+                    self.waiting_to_hurt = False
                 self.idle()
     
     def draw(self):
@@ -133,21 +150,37 @@ class Character(pygame.sprite.Sprite):
         self.current_time = pygame.time.get_ticks()
     
     def attack(self, target):
-        rand_dmg = randint(-5, 5)
-        damage = self.strength + rand_dmg
-        target.hp -= damage
-        target.animation_action = 2
-        target.animation_index = 0
-        target.current_time = pygame.time.get_ticks()
+        self.is_attacking = True
+        self.attack_target = target
+        self.attack_start_time = pygame.time.get_ticks()
         self.animation_action = 1
         self.animation_index = 0
         self.current_time = pygame.time.get_ticks()
-        if target.hp <= 0:
-            target.hp = 0
-            target.die()
         
+        rand_dmg = randint(-5, 5)
+        self.pending_damage = self.strength + rand_dmg
+        
+        target.waiting_to_hurt = True
+    
+    def take_damage(self, damage):
+        self.hp -= damage
+        self.animation_action = 2
+        self.animation_index = 0
+        self.current_time = pygame.time.get_ticks()
+        
+        if self.hp <= 0:
+            self.hp = 0
+            self.die()
+    
     def update(self):
         self.animation()
+        
+        if self.attack_target and self.is_attacking:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.attack_start_time >= self.hurt_delay:
+                if self.attack_target.waiting_to_hurt:
+                    self.attack_target.take_damage(self.pending_damage)
+                    self.attack_target.waiting_to_hurt = False
 
 class HealthBar():
     def __init__(self, x, y, hp, max_hp):
