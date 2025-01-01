@@ -31,13 +31,12 @@ colors = {
 }
 
 class Character(pygame.sprite.Sprite):
-    def __init__(self, x, y, name, max_hp, strength, potions):
+    def __init__(self, x, y, name, max_hp, strength, charms):
         self.name = name
         self.max_hp = max_hp
         self.hp = max_hp
         self.strength = strength
-        self.start_potions = potions
-        self.potions = potions
+        self.charms = charms
         self.alive = True
         self.animation_list = []
         self.animation_index = 0 
@@ -49,6 +48,7 @@ class Character(pygame.sprite.Sprite):
         self.waiting_to_hurt = False
         self.attack_start_time = 0
         self.hurt_delay = 450
+        self.temp_double_dmg_effect = 1
         
         # Idle animation
         temp_animation_list = []
@@ -158,7 +158,10 @@ class Character(pygame.sprite.Sprite):
         self.current_time = pygame.time.get_ticks()
         
         rand_dmg = randint(-5, 5)
-        self.pending_damage = self.strength + rand_dmg
+        if self.temp_double_dmg_effect > 1:
+            self.pending_damage = (self.strength * self.temp_double_dmg_effect) + rand_dmg
+        else:
+            self.pending_damage = self.strength + rand_dmg
         
         target.waiting_to_hurt = True
     
@@ -227,16 +230,31 @@ def play():
     clicked = False
     game_active = True
     
+    charms = {
+        "refill_health": {
+            "amount": 2,
+            "active": False,
+            "effect": 30
+        },
+        "double_damage": {
+            "amount": 2,
+            "active": False,
+            "effect": 2
+        },
+    }
+    
     background_surf = pygame.transform.scale(pygame.image.load("assets/background.png").convert_alpha(), (screen_width, screen_height))
     panel_surf = pygame.image.load("assets/panel.png").convert_alpha()
     sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
+    health_charm_img = pygame.image.load("assets/Buttons/Charms/flask.png").convert_alpha()
+    doubledmg_charm_img = pygame.image.load("assets/Buttons/Charms/double_sword.png").convert_alpha()
     
-    samurai = Character(100, 270, 'Samurai', 100, 60, 3)
+    samurai = Character(100, 270, 'Samurai', 400, 20, charms)
     samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
 
-    gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, 2)
+    gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, None)
     gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
-    yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, 1)
+    yorei = Character(screen_width - 200, 180, 'Yorei', 80, 30, None)
     yorei_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) + 30, yorei.hp, yorei.max_hp)
     enemies = []
     enemies.append(gotoku)
@@ -295,13 +313,25 @@ def play():
                 total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
             
             attack = False
-            charm = False
             target = None
             for count, enemy in enumerate(enemies):
                 if enemy.rect.collidepoint(mouse_pos):
                     if clicked:
                         attack = True
                         target = enemies[count]
+            
+            heath_charm_btn = button.Button(90, (screen_height + bottom_panel_height / 2) + 45, health_charm_img, 0.06)
+            doubledmg_charm_btn = button.Button(90 + 50, (screen_height + bottom_panel_height / 2) + 45, doubledmg_charm_img, 0.06)
+            
+            heal_confirm = False
+            double_damage_confirm = False
+            temp_double_dmg_effect = 1
+            if heath_charm_btn.draw(screen):
+                samurai.charms["refill_health"]["active"] = True
+                heal_confirm = True
+            elif doubledmg_charm_btn.draw(screen):
+                double_damage_confirm = True
+                samurai.charms["double_damage"]["active"] = True
             
             if samurai.alive:
                 if current_character == 1:
@@ -310,8 +340,34 @@ def play():
                     if action_cooldown >= action_delay:
                         if attack and target != None:
                             samurai.attack(target)
+                            if samurai.temp_double_dmg_effect > 1:
+                                samurai.temp_double_dmg_effect = 1
                             current_character += 1
                             action_cooldown = 0
+                  
+                        # healing charm
+                        if samurai.charms["refill_health"]["active"]:
+                            if samurai.charms["refill_health"]["amount"] > 0 and heal_confirm:
+                                if samurai.max_hp - samurai.hp > samurai.charms["refill_health"]["effect"]:
+                                    heal_amount = samurai.charms["refill_health"]["effect"]
+                                else:
+                                    heal_amount = samurai.max_hp - samurai.hp
+                                samurai.hp += heal_amount
+                                samurai.charms["refill_health"]["amount"] -= 1
+                                current_character += 1
+                                action_cooldown = 0
+                                samurai.charms["refill_health"]["active"] = False
+                                heal_confirm = False
+                                
+                        # double damage charm
+                        if samurai.charms["double_damage"]["active"]:
+                            if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
+                                samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
+                                samurai.charms["double_damage"]["amount"] -= 1
+                                current_character += 1
+                                action_cooldown = 0
+                                samurai.charms["double_damage"]["active"] = False
+                                double_damage_confirm = False
             
             if not samurai.alive:
                 game_active = False
