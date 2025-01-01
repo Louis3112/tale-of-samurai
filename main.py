@@ -250,7 +250,7 @@ def play():
     doubledmg_charm_img = pygame.image.load("assets/Buttons/Charms/double_sword.png").convert_alpha()
     
     samurai = Character(100, 270, 'Samurai', 400, 20, charms)
-    samurai_health_bar = HealthBar(80, screen_height + bottom_panel_height / 2, samurai.hp, samurai.max_hp)
+    samurai_health_bar = HealthBar(80, (screen_height + bottom_panel_height / 2) - 30, samurai.hp, samurai.max_hp)
 
     gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, None)
     gotoku_health_bar = HealthBar(screen_width - 310, (screen_height + bottom_panel_height / 2) - 30, gotoku.hp, gotoku.max_hp)
@@ -263,8 +263,8 @@ def play():
     def draw_panel():
         screen.blit(panel_surf, (0, screen_height))
         
-        draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
-        draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 20, fonts['default'], colors['white'])
+        draw_text(f"{samurai.name}" , 110, (screen_height + bottom_panel_height / 2) - 50, fonts['default'], colors['white'])
+        draw_text(f"HP: {samurai.hp}/{samurai.max_hp}" , 280, (screen_height + bottom_panel_height / 2) - 50, fonts['default'], colors['white'])
         
         for count, enemy in enumerate(enemies):
             draw_text(f"{enemy.name}" , screen_width - 280, ((screen_height + bottom_panel_height / 2) - 50) + (count * 60), fonts['default'], colors['white'])
@@ -320,18 +320,20 @@ def play():
                         attack = True
                         target = enemies[count]
             
-            heath_charm_btn = button.Button(90, (screen_height + bottom_panel_height / 2) + 45, health_charm_img, 0.06)
-            doubledmg_charm_btn = button.Button(90 + 50, (screen_height + bottom_panel_height / 2) + 45, doubledmg_charm_img, 0.06)
+            heath_charm_btn = button.Button(100, (screen_height + bottom_panel_height / 2) + 30, health_charm_img, 0.09)
+            doubledmg_charm_btn = button.Button(100 + 50, (screen_height + bottom_panel_height / 2) + 30, doubledmg_charm_img, 0.09)
             
             heal_confirm = False
             double_damage_confirm = False
-            temp_double_dmg_effect = 1
             if heath_charm_btn.draw(screen):
                 samurai.charms["refill_health"]["active"] = True
                 heal_confirm = True
             elif doubledmg_charm_btn.draw(screen):
                 double_damage_confirm = True
                 samurai.charms["double_damage"]["active"] = True
+            
+            draw_text(str(samurai.charms["refill_health"]["amount"]), 110, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
+            draw_text(str(samurai.charms["double_damage"]["amount"]), 160, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
             
             if samurai.alive:
                 if current_character == 1:
