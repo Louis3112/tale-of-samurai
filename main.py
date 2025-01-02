@@ -315,6 +315,8 @@ def play():
     sword_surf = pygame.image.load("assets/sword.png").convert_alpha()
     health_charm_img = pygame.image.load("assets/Buttons/Charms/flask.png").convert_alpha()
     doubledmg_charm_img = pygame.image.load("assets/Buttons/Charms/double_sword.png").convert_alpha()
+    low_health_screen = pygame.image.load("assets/low_health_screen.png").convert_alpha()
+    low_health_screen = pygame.transform.scale(low_health_screen, (screen_width, screen_height))
     
     samurai = Character(100, 270, 'Samurai', 200, 40, charms)
     samurai_health_bar = HealthBar(80, (screen_height + bottom_panel_height / 2) - 30, samurai.hp, samurai.max_hp)
@@ -494,6 +496,9 @@ def play():
             effect.draw()
         
         active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
+        
+        if samurai.hp <= samurai.max_hp * 1 / 4:
+            draw_bg(low_health_screen)
         
         pygame.display.update()
         clock.tick(fps)
