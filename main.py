@@ -208,15 +208,22 @@ class HealthBar():
         screen.blit(bar_surf, (self.x, self.y)) # 475
 
 class Effect(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, name):
+        self.name = name
         self.x = x
         self.y = y
         self.animation_list = []
         self.animation_index = 0
         self.current_time = pygame.time.get_ticks()
+        self.scale_ratio = 1.5
         
-        for i in range(1, 7):
-            img = pygame.image.load(f"assets/Effects/Slash/0{i}.png").convert_alpha()
+        for i in range(1, 10):
+            if self.name == "Claw" or self.name == "Blood":
+                self.scale_ratio = 2.5
+            else:
+                self.scale_ratio = 0.8
+            img = pygame.image.load(f"assets/Effects/{self.name}/0{i}.png").convert_alpha()
+            img = pygame.transform.rotozoom(img, 0, self.scale_ratio)
             self.animation_list.append(img)
         
         self.image = self.animation_list[self.animation_index]
@@ -224,7 +231,7 @@ class Effect(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         
     def animation(self):
-        animation_delay = 150
+        animation_delay = 100
         
         self.image = self.animation_list[int(self.animation_index)]
         
@@ -237,6 +244,27 @@ class Effect(pygame.sprite.Sprite):
         
     def update(self):
         self.animation()
+
+class FloatingText:
+    def __init__(self, text, x, y, duration, font, color):
+        self.text = text
+        self.x = x
+        self.y = y
+        self.start_time = pygame.time.get_ticks()
+        self.duration = duration
+        self.font = font
+        self.color = color
+
+    def update(self):
+        self.y -= 0.5
+
+    def draw(self, screen):
+        text_surface = self.font.render(self.text, True, self.color)
+        text_rect = text_surface.get_rect(center=(self.x, self.y))
+        screen.blit(text_surface, text_rect)
+
+    def is_expired(self):
+        return pygame.time.get_ticks() - self.start_time > self.duration
 
 def draw_bg(bg_surf):
     screen.blit(bg_surf, (0, 0))
@@ -263,6 +291,7 @@ def play():
     game_active = True
     global game_state
     active_effects = []
+    floating_texts = []
     
     charms = {
         "refill_health": {
@@ -375,7 +404,7 @@ def play():
                 if action_cooldown >= action_delay:
                     if attack and target is not None:
                         samurai.attack(target)
-                        active_effects.append(Effect(target.rect.centerx, target.rect.centery))
+                        active_effects.append(Effect(target.rect.centerx, target.rect.centery, "Slash"))
                         if samurai.temp_double_dmg_effect > 1:
                             samurai.temp_double_dmg_effect = 1
                         current_character += 1
@@ -389,6 +418,14 @@ def play():
                             else:
                                 heal_amount = samurai.max_hp - samurai.hp
                             samurai.hp += heal_amount
+                            floating_texts.append(FloatingText(
+                                f"+{heal_amount} HP", 
+                                samurai.rect.centerx,
+                                samurai.rect.top - 20, 
+                                3000, 
+                                fonts['sm'], 
+                                colors['white']
+                            ))
                             samurai.charms["refill_health"]["amount"] -= 1
                             current_character += 1
                             action_cooldown = 0
@@ -399,17 +436,25 @@ def play():
                     if samurai.charms["double_damage"]["active"]:
                         if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
                             samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
+                            floating_texts.append(FloatingText(
+                                f"x{samurai.charms['double_damage']['effect']} Damage",
+                                samurai.rect.centerx,
+                                samurai.rect.top - 20, 
+                                3000, 
+                                fonts['sm'], 
+                                colors['white']
+                            ))
                             samurai.charms["double_damage"]["amount"] -= 1
                             current_character += 1
                             action_cooldown = 0
                             samurai.charms["double_damage"]["active"] = False
                             double_damage_confirm = False
         
-        for effect in active_effects:
-            effect.update()
-            effect.draw()
+        for text in floating_texts:
+            text.update()
+            text.draw(screen)
         
-        active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
+        floating_texts = [text for text in floating_texts if not text.is_expired()]
         
         if not samurai.alive:
             game_state = "GAME OVER"
@@ -426,10 +471,20 @@ def play():
                     action_cooldown += 1
                     if action_cooldown >= action_delay:
                         enemy.attack(samurai)
+                        if enemy.name == "Yorei":
+                            active_effects.append(Effect(samurai.rect.centerx, samurai.rect.centery, "Blood"))
+                        elif enemy.name == "Gotoku":
+                            active_effects.append(Effect(samurai.rect.centerx, samurai.rect.centery, "Claw"))
                         current_character += 1
                         action_cooldown = 0
                 else:
                     current_character += 1
+        
+        for effect in active_effects:
+            effect.update()
+            effect.draw()
+        
+        active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
         
         pygame.display.update()
         clock.tick(fps)
