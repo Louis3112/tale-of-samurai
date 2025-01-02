@@ -208,7 +208,8 @@ class HealthBar():
         screen.blit(bar_surf, (self.x, self.y)) # 475
 
 class Effect(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, name):
+        self.name = name
         self.x = x
         self.y = y
         self.animation_list = []
@@ -216,7 +217,7 @@ class Effect(pygame.sprite.Sprite):
         self.current_time = pygame.time.get_ticks()
         
         for i in range(1, 10):
-            img = pygame.image.load(f"assets/Effects/Slash/0{i}.png").convert_alpha()
+            img = pygame.image.load(f"assets/Effects/{self.name}/0{i}.png").convert_alpha()
             self.animation_list.append(img)
         
         self.image = self.animation_list[self.animation_index]
@@ -375,7 +376,7 @@ def play():
                 if action_cooldown >= action_delay:
                     if attack and target is not None:
                         samurai.attack(target)
-                        active_effects.append(Effect(target.rect.centerx, target.rect.centery))
+                        active_effects.append(Effect(target.rect.centerx, target.rect.centery, "Slash"))
                         if samurai.temp_double_dmg_effect > 1:
                             samurai.temp_double_dmg_effect = 1
                         current_character += 1
@@ -405,12 +406,6 @@ def play():
                             samurai.charms["double_damage"]["active"] = False
                             double_damage_confirm = False
         
-        for effect in active_effects:
-            effect.update()
-            effect.draw()
-        
-        active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
-        
         if not samurai.alive:
             game_state = "GAME OVER"
             restart(game_state)
@@ -426,10 +421,18 @@ def play():
                     action_cooldown += 1
                     if action_cooldown >= action_delay:
                         enemy.attack(samurai)
+                        if enemy.name == "Gotoku":
+                            active_effects.append(Effect(samurai.rect.centerx, samurai.rect.centery, "Blood"))
                         current_character += 1
                         action_cooldown = 0
                 else:
                     current_character += 1
+        
+        for effect in active_effects:
+            effect.update()
+            effect.draw()
+        
+        active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
         
         pygame.display.update()
         clock.tick(fps)
