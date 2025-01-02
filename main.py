@@ -215,7 +215,7 @@ class Effect(pygame.sprite.Sprite):
         self.animation_index = 0
         self.current_time = pygame.time.get_ticks()
         
-        for i in range(1, 7):
+        for i in range(1, 10):
             img = pygame.image.load(f"assets/Effects/Slash/0{i}.png").convert_alpha()
             self.animation_list.append(img)
         
@@ -224,7 +224,7 @@ class Effect(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         
     def animation(self):
-        animation_delay = 150
+        animation_delay = 100
         
         self.image = self.animation_list[int(self.animation_index)]
         
