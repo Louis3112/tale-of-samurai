@@ -207,6 +207,37 @@ class HealthBar():
         pygame.draw.rect(bar_surf, colors['brown'], (0, 0, self.width, self.height), width=5, border_radius=self.border_radius)
         screen.blit(bar_surf, (self.x, self.y)) # 475
 
+class Effect(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.animation_list = []
+        self.animation_index = 0
+        self.current_time = pygame.time.get_ticks()
+        
+        for i in range(1, 7):
+            img = pygame.image.load(f"assets/Effects/Slash/0{i}.png").convert_alpha()
+            self.animation_list.append(img)
+        
+        self.image = self.animation_list[self.animation_index]
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        
+    def animation(self):
+        animation_delay = 150
+        
+        self.image = self.animation_list[int(self.animation_index)]
+        
+        if pygame.time.get_ticks() - self.current_time >= animation_delay:
+            self.current_time = pygame.time.get_ticks()
+            self.animation_index += 1
+    
+    def draw(self):
+        screen.blit(self.image, self.rect)
+        
+    def update(self):
+        self.animation()
+
 def draw_bg(bg_surf):
     screen.blit(bg_surf, (0, 0))
 
@@ -231,6 +262,7 @@ def play():
     clicked = False
     game_active = True
     global game_state
+    active_effects = []
     
     charms = {
         "refill_health": {
@@ -261,7 +293,7 @@ def play():
     enemies = []
     enemies.append(gotoku)
     enemies.append(yorei)
-
+    
     def draw_panel():
         screen.blit(panel_surf, (0, screen_height))
         
@@ -341,8 +373,9 @@ def play():
                 action_delay = 50
                 action_cooldown += 1
                 if action_cooldown >= action_delay:
-                    if attack and target != None:
+                    if attack and target is not None:
                         samurai.attack(target)
+                        active_effects.append(Effect(target.rect.centerx, target.rect.centery))
                         if samurai.temp_double_dmg_effect > 1:
                             samurai.temp_double_dmg_effect = 1
                         current_character += 1
@@ -371,6 +404,12 @@ def play():
                             action_cooldown = 0
                             samurai.charms["double_damage"]["active"] = False
                             double_damage_confirm = False
+        
+        for effect in active_effects:
+            effect.update()
+            effect.draw()
+        
+        active_effects = [effect for effect in active_effects if effect.animation_index < len(effect.animation_list)]
         
         if not samurai.alive:
             game_state = "GAME OVER"
