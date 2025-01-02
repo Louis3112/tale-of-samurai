@@ -245,6 +245,27 @@ class Effect(pygame.sprite.Sprite):
     def update(self):
         self.animation()
 
+class FloatingText:
+    def __init__(self, text, x, y, duration, font, color):
+        self.text = text
+        self.x = x
+        self.y = y
+        self.start_time = pygame.time.get_ticks()
+        self.duration = duration
+        self.font = font
+        self.color = color
+
+    def update(self):
+        self.y -= 0.5
+
+    def draw(self, screen):
+        text_surface = self.font.render(self.text, True, self.color)
+        text_rect = text_surface.get_rect(center=(self.x, self.y))
+        screen.blit(text_surface, text_rect)
+
+    def is_expired(self):
+        return pygame.time.get_ticks() - self.start_time > self.duration
+
 def draw_bg(bg_surf):
     screen.blit(bg_surf, (0, 0))
 
@@ -270,6 +291,7 @@ def play():
     game_active = True
     global game_state
     active_effects = []
+    floating_texts = []
     
     charms = {
         "refill_health": {
@@ -396,6 +418,14 @@ def play():
                             else:
                                 heal_amount = samurai.max_hp - samurai.hp
                             samurai.hp += heal_amount
+                            floating_texts.append(FloatingText(
+                                f"+{heal_amount} HP", 
+                                samurai.rect.centerx,
+                                samurai.rect.top - 20, 
+                                3000, 
+                                fonts['sm'], 
+                                colors['white']
+                            ))
                             samurai.charms["refill_health"]["amount"] -= 1
                             current_character += 1
                             action_cooldown = 0
@@ -406,11 +436,25 @@ def play():
                     if samurai.charms["double_damage"]["active"]:
                         if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
                             samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
+                            floating_texts.append(FloatingText(
+                                f"x{samurai.charms['double_damage']['effect']} Damage",
+                                samurai.rect.centerx,
+                                samurai.rect.top - 20, 
+                                3000, 
+                                fonts['sm'], 
+                                colors['white']
+                            ))
                             samurai.charms["double_damage"]["amount"] -= 1
                             current_character += 1
                             action_cooldown = 0
                             samurai.charms["double_damage"]["active"] = False
                             double_damage_confirm = False
+        
+        for text in floating_texts:
+            text.update()
+            text.draw(screen)
+        
+        floating_texts = [text for text in floating_texts if not text.is_expired()]
         
         if not samurai.alive:
             game_state = "GAME OVER"
