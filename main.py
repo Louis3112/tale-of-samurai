@@ -50,6 +50,8 @@ class Character(pygame.sprite.Sprite):
         self.attack_start_time = 0
         self.hurt_delay = 450
         self.temp_double_dmg_effect = 1
+        self.hit_sound = pygame.mixer.Sound(f"assets/Sounds/{self.name}_hit.mp3")
+        self.death_sound = pygame.mixer.Sound(f"assets/Sounds/death.mp3")
         
         # Idle animation
         temp_animation_list = []
@@ -146,12 +148,14 @@ class Character(pygame.sprite.Sprite):
     
     def die(self):
         self.alive = False
+        self.death_sound.play()
         self.animation_action = 3
         self.animation_index = 0
         self.current_time = pygame.time.get_ticks()
     
     def attack(self, target):
         self.is_attacking = True
+        self.hit_sound.play()
         self.attack_target = target
         self.attack_start_time = pygame.time.get_ticks()
         self.animation_action = 1
@@ -323,6 +327,9 @@ def play():
     enemies.append(gotoku)
     enemies.append(yorei)
     
+    heal_up_sound = pygame.mixer.Sound(f"assets/Sounds/heal_up.mp3")
+    double_damage_sound = pygame.mixer.Sound(f"assets/Sounds/power_up.mp3")
+    
     def draw_panel():
         screen.blit(panel_surf, (0, screen_height))
         
@@ -418,6 +425,7 @@ def play():
                             else:
                                 heal_amount = samurai.max_hp - samurai.hp
                             samurai.hp += heal_amount
+                            heal_up_sound.play()
                             floating_texts.append(FloatingText(
                                 f"+{heal_amount} HP", 
                                 samurai.rect.centerx,
@@ -436,6 +444,7 @@ def play():
                     if samurai.charms["double_damage"]["active"]:
                         if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
                             samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
+                            double_damage_sound.play()
                             floating_texts.append(FloatingText(
                                 f"x{samurai.charms['double_damage']['effect']} Damage",
                                 samurai.rect.centerx,
