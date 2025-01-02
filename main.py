@@ -215,9 +215,15 @@ class Effect(pygame.sprite.Sprite):
         self.animation_list = []
         self.animation_index = 0
         self.current_time = pygame.time.get_ticks()
+        self.scale_ratio = 1.5
         
         for i in range(1, 10):
+            if self.name == "Claw" or self.name == "Blood":
+                self.scale_ratio = 2.5
+            else:
+                self.scale_ratio = 0.8
             img = pygame.image.load(f"assets/Effects/{self.name}/0{i}.png").convert_alpha()
+            img = pygame.transform.rotozoom(img, 0, self.scale_ratio)
             self.animation_list.append(img)
         
         self.image = self.animation_list[self.animation_index]
@@ -421,8 +427,10 @@ def play():
                     action_cooldown += 1
                     if action_cooldown >= action_delay:
                         enemy.attack(samurai)
-                        if enemy.name == "Gotoku":
+                        if enemy.name == "Yorei":
                             active_effects.append(Effect(samurai.rect.centerx, samurai.rect.centery, "Blood"))
+                        elif enemy.name == "Gotoku":
+                            active_effects.append(Effect(samurai.rect.centerx, samurai.rect.centery, "Claw"))
                         current_character += 1
                         action_cooldown = 0
                 else:
