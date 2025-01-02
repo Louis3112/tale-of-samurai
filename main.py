@@ -10,6 +10,7 @@ screen_width = 800
 screen_height = 400
 
 img_scale_ratio = 1.5
+game_state = ""
 
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 clock = pygame.time.Clock()
@@ -229,12 +230,13 @@ def play():
     action_delay = 100
     clicked = False
     game_active = True
+    global game_state
     
     charms = {
         "refill_health": {
             "amount": 2,
             "active": False,
-            "effect": 30
+            "effect": 100
         },
         "double_damage": {
             "amount": 2,
@@ -249,7 +251,7 @@ def play():
     health_charm_img = pygame.image.load("assets/Buttons/Charms/flask.png").convert_alpha()
     doubledmg_charm_img = pygame.image.load("assets/Buttons/Charms/double_sword.png").convert_alpha()
     
-    samurai = Character(100, 270, 'Samurai', 400, 20, charms)
+    samurai = Character(100, 270, 'Samurai', 200, 40, charms)
     samurai_health_bar = HealthBar(80, (screen_height + bottom_panel_height / 2) - 30, samurai.hp, samurai.max_hp)
 
     gotoku = Character(screen_width - 100, 270, 'Gotoku', 120, 25, None)
@@ -281,122 +283,119 @@ def play():
             else:
                 clicked = False
         
-        if game_active:
-            draw_bg(background_surf)
+        draw_bg(background_surf)
             
-            draw_panel()
-            
-            samurai_health_bar.draw(samurai.hp)
-            gotoku_health_bar.draw(gotoku.hp)
-            yorei_health_bar.draw(yorei.hp)
-            
-            samurai.draw()
-            samurai.update()
-            
-            for enemy in enemies:
-                enemy.draw()
-                enemy.update()
-            
-            mouse_pos = pygame.mouse.get_pos()
-            for enemy in enemies:
-                if current_character == 1:
-                    if enemy.alive and enemy.rect.collidepoint(mouse_pos):
-                        pygame.mouse.set_visible(False)
-                        screen.blit(sword_surf, mouse_pos)
-                    else:
-                        pygame.mouse.set_visible(True)
+        draw_panel()
+        
+        samurai_health_bar.draw(samurai.hp)
+        gotoku_health_bar.draw(gotoku.hp)
+        yorei_health_bar.draw(yorei.hp)
+        
+        samurai.draw()
+        samurai.update()
+        
+        for enemy in enemies:
+            enemy.draw()
+            enemy.update()
+        
+        mouse_pos = pygame.mouse.get_pos()
+        for enemy in enemies:
+            if current_character == 1:
+                if enemy.alive and enemy.rect.collidepoint(mouse_pos):
+                    pygame.mouse.set_visible(False)
+                    screen.blit(sword_surf, mouse_pos)
                 else:
                     pygame.mouse.set_visible(True)
-            
-            if current_character > total_characters:
-                current_character = 1
-                total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
-            
-            attack = False
-            target = None
-            for count, enemy in enumerate(enemies):
-                if enemy.rect.collidepoint(mouse_pos):
-                    if clicked:
-                        attack = True
-                        target = enemies[count]
-            
-            heath_charm_btn = button.Button(100, (screen_height + bottom_panel_height / 2) + 30, health_charm_img, 0.09)
-            doubledmg_charm_btn = button.Button(100 + 50, (screen_height + bottom_panel_height / 2) + 30, doubledmg_charm_img, 0.09)
-            
-            heal_confirm = False
-            double_damage_confirm = False
-            if heath_charm_btn.draw(screen):
-                samurai.charms["refill_health"]["active"] = True
-                heal_confirm = True
-            elif doubledmg_charm_btn.draw(screen):
-                double_damage_confirm = True
-                samurai.charms["double_damage"]["active"] = True
-            
-            draw_text(str(samurai.charms["refill_health"]["amount"]), 110, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
-            draw_text(str(samurai.charms["double_damage"]["amount"]), 160, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
-            
-            if samurai.alive:
-                if current_character == 1:
-                    action_delay = 50
+            else:
+                pygame.mouse.set_visible(True)
+        
+        if current_character > total_characters:
+            current_character = 1
+            total_characters = 1 + sum(1 for enemy in enemies if enemy.alive)
+        
+        attack = False
+        target = None
+        for count, enemy in enumerate(enemies):
+            if enemy.rect.collidepoint(mouse_pos):
+                if clicked:
+                    attack = True
+                    target = enemies[count]
+        
+        heath_charm_btn = button.Button(100, (screen_height + bottom_panel_height / 2) + 30, health_charm_img, 0.09)
+        doubledmg_charm_btn = button.Button(100 + 50, (screen_height + bottom_panel_height / 2) + 30, doubledmg_charm_img, 0.09)
+        
+        heal_confirm = False
+        double_damage_confirm = False
+        if heath_charm_btn.draw(screen):
+            samurai.charms["refill_health"]["active"] = True
+            heal_confirm = True
+        elif doubledmg_charm_btn.draw(screen):
+            double_damage_confirm = True
+            samurai.charms["double_damage"]["active"] = True
+        
+        draw_text(str(samurai.charms["refill_health"]["amount"]), 110, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
+        draw_text(str(samurai.charms["double_damage"]["amount"]), 160, (screen_height + bottom_panel_height / 2) + 40, fonts['sm'], colors['white'])
+        
+        if samurai.alive:
+            if current_character == 1:
+                action_delay = 50
+                action_cooldown += 1
+                if action_cooldown >= action_delay:
+                    if attack and target != None:
+                        samurai.attack(target)
+                        if samurai.temp_double_dmg_effect > 1:
+                            samurai.temp_double_dmg_effect = 1
+                        current_character += 1
+                        action_cooldown = 0
+                
+                    # healing charm
+                    if samurai.charms["refill_health"]["active"]:
+                        if samurai.charms["refill_health"]["amount"] > 0 and heal_confirm:
+                            if samurai.max_hp - samurai.hp > samurai.charms["refill_health"]["effect"]:
+                                heal_amount = samurai.charms["refill_health"]["effect"]
+                            else:
+                                heal_amount = samurai.max_hp - samurai.hp
+                            samurai.hp += heal_amount
+                            samurai.charms["refill_health"]["amount"] -= 1
+                            current_character += 1
+                            action_cooldown = 0
+                            samurai.charms["refill_health"]["active"] = False
+                            heal_confirm = False
+                            
+                    # double damage charm
+                    if samurai.charms["double_damage"]["active"]:
+                        if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
+                            samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
+                            samurai.charms["double_damage"]["amount"] -= 1
+                            current_character += 1
+                            action_cooldown = 0
+                            samurai.charms["double_damage"]["active"] = False
+                            double_damage_confirm = False
+        
+        if not samurai.alive:
+            game_state = "GAME OVER"
+            restart(game_state)
+        
+        if all(not enemy.alive for enemy in enemies):
+            game_state = "VICTORY"
+            restart(game_state)
+        
+        action_delay = 100
+        for count, enemy in enumerate(enemies):
+            if current_character == 2 + count:
+                if enemy.alive:
                     action_cooldown += 1
                     if action_cooldown >= action_delay:
-                        if attack and target != None:
-                            samurai.attack(target)
-                            if samurai.temp_double_dmg_effect > 1:
-                                samurai.temp_double_dmg_effect = 1
-                            current_character += 1
-                            action_cooldown = 0
-                  
-                        # healing charm
-                        if samurai.charms["refill_health"]["active"]:
-                            if samurai.charms["refill_health"]["amount"] > 0 and heal_confirm:
-                                if samurai.max_hp - samurai.hp > samurai.charms["refill_health"]["effect"]:
-                                    heal_amount = samurai.charms["refill_health"]["effect"]
-                                else:
-                                    heal_amount = samurai.max_hp - samurai.hp
-                                samurai.hp += heal_amount
-                                samurai.charms["refill_health"]["amount"] -= 1
-                                current_character += 1
-                                action_cooldown = 0
-                                samurai.charms["refill_health"]["active"] = False
-                                heal_confirm = False
-                                
-                        # double damage charm
-                        if samurai.charms["double_damage"]["active"]:
-                            if samurai.charms["double_damage"]["amount"] > 0 and double_damage_confirm:
-                                samurai.temp_double_dmg_effect = samurai.charms["double_damage"]["effect"]
-                                samurai.charms["double_damage"]["amount"] -= 1
-                                current_character += 1
-                                action_cooldown = 0
-                                samurai.charms["double_damage"]["active"] = False
-                                double_damage_confirm = False
-            
-            if not samurai.alive:
-                game_active = False
-            
-            count_enemies_alive = sum(1 for enemy in enemies if enemy.alive)
-            if count_enemies_alive == 0:
-                running = False
-                game_active = False
-            
-            action_delay = 100
-            for count, enemy in enumerate(enemies):
-                if current_character == 2 + count:
-                    if enemy.alive:
-                        action_cooldown += 1
-                        if action_cooldown >= action_delay:
-                            enemy.attack(samurai)
-                            current_character += 1
-                            action_cooldown = 0
-                    else:
+                        enemy.attack(samurai)
                         current_character += 1
-        else:
-            restart()
+                        action_cooldown = 0
+                else:
+                    current_character += 1
         
         pygame.display.update()
         clock.tick(fps)
 
-def restart():
+def restart(game_state):
     screen.fill((94, 129, 162))
     
     pygame.display.set_caption("Tale of Samurai: Restart Menu")
@@ -408,9 +407,9 @@ def restart():
     menu_btn_img = pygame.image.load("assets/Buttons/btn_menu.png").convert_alpha()
     
     retry_btn = button.Button(screen_width / 2, 200, retry_btn_img, 1.2)
-    menu_btn = button.Button(100, 300, menu_btn_img, 1.2)
+    menu_btn = button.Button(screen_width / 2, 280, menu_btn_img, 1.2)
     
-    draw_text("GAME OVER", screen_width / 2, 100, fonts['lg'], colors['white'])
+    draw_text(f"{game_state}", screen_width / 2, 100, fonts['lg'], colors['white'])
     
     while running:
         for event in pygame.event.get():
@@ -419,7 +418,6 @@ def restart():
                 pygame.quit()
                 exit()
 
-        # draw buttons
         if retry_btn.draw(screen):
             play()
         if menu_btn.draw(screen):
@@ -427,7 +425,7 @@ def restart():
         
         pygame.display.update()
         clock.tick(fps)
- 
+
 def main_menu():
     screen.fill(colors['black'])
     
@@ -462,5 +460,5 @@ def main_menu():
         
         pygame.display.update()
         clock.tick(fps)
-        
+
 main_menu()
