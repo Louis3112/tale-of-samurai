@@ -12,6 +12,10 @@ screen_height = 400
 img_scale_ratio = 1.5
 game_state = ""
 
+main_music = pygame.mixer.Sound("assets/Sounds/main_music.wav")
+battle_music = pygame.mixer.Sound("assets/Sounds/battle_music.wav")
+main_music.play()
+
 screen = pygame.display.set_mode((screen_width, screen_height + bottom_panel_height))
 clock = pygame.time.Clock()
 
@@ -52,6 +56,7 @@ class Character(pygame.sprite.Sprite):
         self.temp_double_dmg_effect = 1
         self.hit_sound = pygame.mixer.Sound(f"assets/Sounds/{self.name}_hit.mp3")
         self.death_sound = pygame.mixer.Sound(f"assets/Sounds/death.mp3")
+        self.death_animation_complete = False
         
         # Idle animation
         temp_animation_list = []
@@ -189,6 +194,10 @@ class Character(pygame.sprite.Sprite):
                 if self.attack_target.waiting_to_hurt:
                     self.attack_target.take_damage(self.pending_damage)
                     self.attack_target.waiting_to_hurt = False
+        
+        if not self.alive and self.animation_action == 3:
+            if self.animation_index >= len(self.animation_list[3]) - 1:
+                self.death_animation_complete = True
 
 class HealthBar():
     def __init__(self, x, y, hp, max_hp):
@@ -279,6 +288,9 @@ def draw_text(text, x, y, font, color):
     screen.blit(text_surf, text_rect)
 
 def play():
+    main_music.stop()
+    battle_music.set_volume(0.5)
+    battle_music.play()
     
     screen.fill(colors['black'])
     
@@ -467,12 +479,11 @@ def play():
         
         floating_texts = [text for text in floating_texts if not text.is_expired()]
         
-        if not samurai.alive:
-            game_state = "GAME OVER"
+        if samurai_health_bar.hp <= 0:
+            game_state = "game_over"
             restart(game_state)
-        
-        if all(not enemy.alive for enemy in enemies):
-            game_state = "VICTORY"
+        elif gotoku_health_bar.hp <= 0 and yorei_health_bar.hp <= 0:
+            game_state = "victory"
             restart(game_state)
         
         action_delay = 100
@@ -504,7 +515,12 @@ def play():
         clock.tick(fps)
 
 def restart(game_state):
-    screen.fill((94, 129, 162))
+    main_music.stop()
+    battle_music.stop()
+    main_music.play()
+    
+    overlay = pygame.Surface((screen_width, screen_height + bottom_panel_height), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 76))
     
     pygame.display.set_caption("Tale of Samurai: Restart Menu")
     
@@ -514,10 +530,16 @@ def restart(game_state):
     retry_btn_img = pygame.image.load("assets/Buttons/btn_retry.png").convert_alpha()
     menu_btn_img = pygame.image.load("assets/Buttons/btn_menu.png").convert_alpha()
     
+    victory_title = pygame.image.load("assets/victory.png").convert_alpha()
+    victory_title = pygame.transform.rotozoom(victory_title, 0, 0.5)
+    victory_title_rect = victory_title.get_rect(midtop = (screen_width / 2, 10))
+    
+    defeat_title = pygame.image.load("assets/defeat.png").convert_alpha()
+    defeat_title = pygame.transform.rotozoom(defeat_title, 0, 0.5)
+    defeat_title_rect = defeat_title.get_rect(midtop = (screen_width / 2, 10))
+    
     retry_btn = button.Button(screen_width / 2, 200, retry_btn_img, 1.2)
     menu_btn = button.Button(screen_width / 2, 280, menu_btn_img, 1.2)
-    
-    draw_text(f"{game_state}", screen_width / 2, 100, fonts['lg'], colors['white'])
     
     while running:
         for event in pygame.event.get():
@@ -525,6 +547,11 @@ def restart(game_state):
                 running = False
                 pygame.quit()
                 exit()
+        
+        if game_state == "victory":
+            screen.blit(victory_title, victory_title_rect)
+        elif game_state == "game_over":
+            screen.blit(defeat_title, defeat_title_rect)
 
         if retry_btn.draw(screen):
             play()
@@ -535,6 +562,10 @@ def restart(game_state):
         clock.tick(fps)
 
 def main_menu():
+    main_music.stop()
+    battle_music.stop()
+    main_music.play()
+    
     screen.fill(colors['black'])
     
     pygame.display.set_caption("Tale of Samurai: Main Menu")
@@ -544,11 +575,14 @@ def main_menu():
     
     background_surf = pygame.transform.scale(pygame.image.load("assets/mountain_bg.png").convert_alpha(), (screen_width, screen_height + bottom_panel_height))
     
+    game_title = pygame.image.load("assets/game_title.png").convert_alpha()
+    game_title = pygame.transform.rotozoom(game_title, 0, 1.2)
+    
     play_btn_img = pygame.image.load("assets/Buttons/btn_play.png").convert_alpha()
     exit_btn_img = pygame.image.load("assets/Buttons/btn_exit.png").convert_alpha()
     
-    play_btn = button.Button(screen_width / 2, 200, play_btn_img, 1.2)
-    exit_btn = button.Button(100, 300, exit_btn_img, 1.2)
+    play_btn = button.Button(screen_width / 2, 350, play_btn_img, 1.2)
+    exit_btn = button.Button(35, 35, exit_btn_img, 1.2)
     
     while running:
         for event in pygame.event.get():
@@ -565,6 +599,8 @@ def main_menu():
             running = False
             pygame.quit()
             exit()
+        
+        screen.blit(game_title, (screen_width / 2 - game_title.get_width() / 2, 100))
         
         pygame.display.update()
         clock.tick(fps)
