@@ -16,7 +16,7 @@ The project implements various of OOP concepts, such as :
 
 The reason why we are using Python and pygame (rather than Java or other class-oriented programming language) is because pygame provides a user-friendly framework for game development, offering built-in functions and methods that simplify the implementation of game mechanics, graphics, and audio.
 
-For further information, there is a report written in Bahasa Indonesia that you can read from.
+For further information, there is a report written in *Bahasa Indonesia* that you can read from.
 
 ## :busts_in_silhouette: **Team** :busts_in_silhouette:
 The project was completed by Group 2, which consists of following members :
