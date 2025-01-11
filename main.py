@@ -1,9 +1,14 @@
 import pygame
 from sys import exit
 from random import randint
+from abc import ABC, abstractmethod
+
 import button
 
 pygame.init()
+
+pygame_icon = pygame.image.load('assets/game_title.png')
+pygame.display.set_icon(pygame_icon)
 
 bottom_panel_height = 150
 screen_width = 800
@@ -199,7 +204,18 @@ class Character(pygame.sprite.Sprite):
             if self.animation_index >= len(self.animation_list[3]) - 1:
                 self.death_animation_complete = True
 
-class HealthBar():
+class AbsHealthBar(ABC):
+    @property
+    @abstractmethod
+    def hp(self):
+        pass
+
+    @property
+    @abstractmethod
+    def max_hp(self):
+        pass
+    
+class HealthBar(AbsHealthBar):
     def __init__(self, x, y, hp, max_hp):
         self.x = x
         self.y = y
@@ -209,7 +225,21 @@ class HealthBar():
         self.height = 25
         self.border_radius = 10
         self.health_bar_value = (self.hp / self.max_hp) * self.width
-        
+    
+    def hp(self):
+        return self.hp
+
+    def hp(self, value):
+        if value < 0:
+            self._hp = 0
+        elif value > self.max_hp:
+            self._hp = self.max_hp
+        else:
+            self._hp = value
+    
+    def max_hp(self):
+        return self._max_hp
+
     def draw(self, hp):
         self.hp = hp
         self.health_bar_value = (self.hp / self.max_hp) * self.width
@@ -245,7 +275,6 @@ class Effect(pygame.sprite.Sprite):
         
     def animation(self):
         animation_delay = 100
-        
         self.image = self.animation_list[int(self.animation_index)]
         
         if pygame.time.get_ticks() - self.current_time >= animation_delay:
