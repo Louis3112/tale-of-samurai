@@ -34,7 +34,7 @@ To install this project, please proceed these steps:
 4. Run the project: **`python main.py`**
 
 ## 	:bust_in_silhouette: **Contributing** :bust_in_silhouette:
-If you'd like to contribute or upgrade the project, it would be my pleasure! :smile: 
+If you'd like to contribute or upgrade the project, it would be our pleasure! :smile: 
 
 Here's how to to contribute:
 1. Fork the repository
